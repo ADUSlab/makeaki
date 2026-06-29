@@ -1,0 +1,13 @@
+data/
+outputs/
+*.csv
+*.csv.gz
+*.parquet
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.Rhistory
+.RData
+.Rproj.user/
+.DS_Store
