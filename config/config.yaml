@@ -1,0 +1,137 @@
+# Locked study configuration. All thresholds are prespecified in the
+# Statistical Analysis Plan and must not be changed after causal estimation
+# begins. Paths support environment-variable expansion (for example $DATA_ROOT).
+
+data_root: "${DATA_ROOT}"
+output_dir: "outputs"
+random_seed: 20260617
+
+cohorts:
+  mimic:
+    hosp_dir: "mimiciv/hosp"
+    icu_dir: "mimiciv/icu"
+  eicu:
+    dir: "eicu"
+
+# Inclusion and exclusion
+inclusion:
+  min_age_years: 18
+
+# AKI (KDIGO 2012). Baseline ratio thresholds define staging.
+aki:
+  scr_abs_increase_mgdl: 0.3        # within 48 hours
+  scr_ratio_stage1: 1.5
+  scr_ratio_stage2: 2.0
+  scr_ratio_stage3: 3.0
+  scr_abs_stage3_mgdl: 4.0
+  uo_threshold_ml_kg_h: 0.5         # sustained for at least uo_window_hours
+  uo_window_hours: 6
+  delta_window_hours: 48
+
+# Baseline creatinine hierarchy (primary). Back-calculation is sensitivity only.
+baseline_creatinine:
+  outpatient_window_days: [7, 365]  # days before admission, inclusive
+  outpatient_aggregator: "median"
+  use_admission_value_if_missing: true
+  egfr_backcalc_value: 75           # sensitivity analysis only
+
+# Outcome MAKE-H. Persistent renal dysfunction uses the standard MAKE doubling.
+outcome:
+  prd_scr_ratio: 2.0
+  prd_egfr_fraction: 0.75           # eGFR <= 0.75 x baseline
+  rrt_recent_window_hours: 48
+  landmark_days: 7
+
+# Modifiable exposures and counterfactual policies
+exposures:
+  fluid_overload_pct_primary: 5.0
+  fluid_overload_pct_sensitivity: 10.0
+  map_threshold_primary: 65
+  map_threshold_sensitivity: [60, 70]
+  nephrotoxin_concurrent_min: 2
+  exposure_window_hours: 72
+
+# Longitudinal windows after t0 (hours)
+windows_hours: [[0, 6], [6, 12], [12, 24], [24, 48], [48, 72]]
+
+# Clinically relevant thresholds for benefit
+thresholds:
+  delta_min_screening: 0.05
+  delta_min_high_risk: 0.10
+
+# MIMIC-IV item identifiers
+mimic_itemids:
+  creatinine_lab: [50912]
+  rrt_procedure: [225441, 225802, 225803, 225805, 225809, 225955]  # HD, CRRT, CVVHD, PD, CVVHDF, SCUF
+  rrt_chart: [227290, 224154, 224151, 226457, 226499]  # CRRT mode, dialysate rate, effluent pressure, ultrafiltrate, HD output (active-RRT markers)
+  map_chart: [220052, 220181, 225312]
+  weight_chart: [226512, 224639]
+  height_chart: [226730]
+  urine_output: [226559, 226560, 226561, 226584, 226563, 226564, 226565, 226567, 226557, 226558, 227510]
+  urine_irrigant_negative: [227488]   # GU irrigant volume in, subtracted
+  lactate_lab: [50813]
+  vasopressor_input: [221906, 221289, 221662, 222315, 221749]  # norepi, epi, dopamine, vasopressin, phenylephrine
+  vent_procedure: [225792, 225794]    # invasive and non-invasive ventilation
+  # SOFA-component confounders
+  platelet_lab: [51265]
+  bilirubin_lab: [50885]
+  pao2_lab: [50821]
+  fio2_chart: [223835]
+  spo2_chart: [220277]
+  gcs_chart: [220739, 223900, 223901]  # GCS eye, verbal, motor
+
+# Prespecified nephrotoxin classes (generic names, lower case, matched as substrings)
+nephrotoxins:
+  - vancomycin
+  - gentamicin
+  - tobramycin
+  - amikacin
+  - colistin
+  - polymyxin
+  - amphotericin
+  - acyclovir
+  - ganciclovir
+  - foscarnet
+  - tenofovir
+  - cisplatin
+  - methotrexate
+  - tacrolimus
+  - cyclosporine
+  - ibuprofen
+  - ketorolac
+  - naproxen
+  - indomethacin
+  - piperacillin-tazobactam
+
+# eICU-CRD harmonization (offsets are minutes from unit admission)
+eicu:
+  reference_date: "2000-01-01"
+  labnames:
+    creatinine: ["creatinine"]
+    lactate: ["lactate"]
+    platelet: ["platelets x 1000"]
+    bilirubin: ["total bilirubin"]
+    pao2: ["paO2"]
+  exclusion_patterns: ["esrd", "end-stage renal", "dialysis", "transplant"]
+  rrt_treatment_patterns: ["dialysis", "crrt", "cvvh", "hemodialysis", "ultrafiltration"]
+  vasopressor_patterns: ["norepinephrine", "levophed", "epinephrine", "dopamine", "vasopressin", "phenylephrine", "neo-synephrine", "neosynephrine"]
+  # eICU drug names use brands/abbreviations; matched as plain substrings.
+  nephrotoxin_patterns: ["vancomycin", "vanco", "zosyn", "piperacillin", "gentamicin",
+    "tobramycin", "amikacin", "colistin", "polymyxin", "amphotericin", "ambisome",
+    "acyclovir", "zovirax", "ganciclovir", "foscarnet", "tenofovir", "cisplatin",
+    "methotrexate", "tacrolimus", "prograf", "cyclosporine", "sandimmune",
+    "ibuprofen", "motrin", "ketorolac", "toradol", "naproxen", "indomethacin"]
+  vent_keywords: ["ventilator", "ventilation", "intubat"]
+  map_fields: ["systemicmean", "noninvasivemean"]
+
+# ICD codes (no dots) for exclusions
+exclusion_icd:
+  esrd: ["5856", "N186"]
+  chronic_dialysis: ["V4511", "V560", "V561", "V562", "Z992", "Z9115"]
+  kidney_transplant: ["V420", "Z940", "9968", "99681", "T861", "T8610", "T8611", "T8612", "T8613", "T8619"]
+
+# ICD codes for comorbidity flags (baseline confounders)
+comorbidity_icd_prefix:
+  ckd: ["585", "N18"]
+  diabetes: ["250", "E10", "E11"]
+  heart_failure: ["428", "I50"]
